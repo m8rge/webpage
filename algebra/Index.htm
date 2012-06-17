@@ -1,480 +1,69 @@
 <!DOCTYPE HTML>
-</html>
-<html><head>
-    <meta content="text/html; charset=UTF-8" http-equiv="content-type">
-    <style type="text/css">
-        :root {
-            font-family: sans-serif;
-        }
-        img {
-            border: 0;
-        }
-        th {
-            text-align: start;
-            white-space: nowrap;
-        }
-        th &gt; a {
-                    color: inherit;
-                }
-        table[order] &gt; thead &gt; tr &gt; th {
-                                                 cursor: pointer;
-                                             }
-        table[order] &gt; thead &gt; tr &gt; th::after {
-                                                 display: none;
-                                                 width: .8em;
-                                                 -moz-margin-end: -.8em;
-                                                 text-align: end;
-                                             }
-        table[order="asc"] &gt; thead &gt; tr &gt; th::after {
-                                                       content: "\2193"; /* DOWNWARDS ARROW (U+2193) */
-                                                   }
-        table[order="desc"] &gt; thead &gt; tr &gt; th::after {
-                                                        content: "\2191"; /* UPWARDS ARROW (U+2191) */
-                                                    }
-        table[order][order-by="0"] &gt; thead &gt; tr &gt; th:first-child &gt; a ,
-                                                                               table[order][order-by="1"] &gt; thead &gt; tr &gt; th:first-child + th &gt; a ,
-                                                                                                                                                           table[order][order-by="2"] &gt; thead &gt; tr &gt; th:first-child + th + th &gt; a {
-                                                                                                                                                                                                                                                text-decoration: underline;
-                                                                                                                                                                                                                                            }
-        table[order][order-by="0"] &gt; thead &gt; tr &gt; th:first-child::after ,
-                                                           table[order][order-by="1"] &gt; thead &gt; tr &gt; th:first-child + th::after ,
-                                                                                                              table[order][order-by="2"] &gt; thead &gt; tr &gt; th:first-child + th + th::after {
-                                                                                                                                                                     display: inline-block;
-                                                                                                                                                                 }
-        table.remove-hidden &gt; tbody &gt; tr.hidden-object {
-                                                display: none;
-                                            }
-        td &gt; a {
-                    display: inline-block;
-                }
-            /* name */
-        th:first-child {
-            -moz-padding-end: 2em;
-        }
-            /* size */
-        th:first-child + th {
-            -moz-padding-end: 1em;
-        }
-        td:first-child + td {
-            text-align: end;
-            -moz-padding-end: 1em;
-            white-space: nowrap;
-        }
-            /* date */
-        td:first-child + td + td {
-            -moz-padding-start: 1em;
-            -moz-padding-end: .5em;
-            white-space: nowrap;
-        }
-            /* time */
-        td:last-child {
-            -moz-padding-start: .5em;
-            white-space: nowrap;
-        }
-        .symlink {
-            font-style: italic;
-        }
-        .dir ,
-        .symlink ,
-        .file {
-            -moz-margin-start: 20px;
-        }
-        .dir::before ,
-        .file &gt; img {
-                       -moz-margin-end: 4px;
-                       -moz-margin-start: -20px;
-                       vertical-align: middle;
-                   }
-        .dir::before {
-            content: url(resource://gre/res/html/folder.png);
-        }
-    </style>
-    <link href="chrome://global/skin/dirListing/dirListing.css" type="text/css" media="screen, projection" rel="stylesheet">
-    <script type="application/javascript">
-        var gTable, gOrderBy, gTBody, gRows, gUI_showHidden;
-        document.addEventListener("DOMContentLoaded", function() {
-            gTable = document.getElementsByTagName("table")[0];
-            gTBody = gTable.tBodies[0];
-            if (gTBody.rows.length &lt; 2)
-                return;
-            gUI_showHidden = document.getElementById("UI_showHidden");
-            var headCells = gTable.tHead.rows[0].cells,
-                    hiddenObjects = false;
-            function rowAction(i) {
-                return function(event) {
-                    event.preventDefault();
-                    orderBy(i);
-                }
-            }
-            for (var i = headCells.length - 1; i &gt;= 0; i--) {
-                var anchor = document.createElement("a");
-                anchor.href = "";
-                anchor.appendChild(headCells[i].firstChild);
-                headCells[i].appendChild(anchor);
-                headCells[i].addEventListener("click", rowAction(i), true);
-            }
-            if (gUI_showHidden) {
-                gRows = Array.slice(gTBody.rows);
-                hiddenObjects = gRows.some(function (row) row.className == "hidden-object");
-            }
-            gTable.setAttribute("order", "");
-            if (hiddenObjects) {
-                gUI_showHidden.style.display = "block";
-                updateHidden();
-            }
-        }, "false");
-        function compareRows(rowA, rowB) {
-            var a = rowA.cells[gOrderBy].getAttribute("sortable-data") || "";
-            var b = rowB.cells[gOrderBy].getAttribute("sortable-data") || "";
-            var intA = +a;
-            var intB = +b;
-            if (a == intA &amp;&amp; b == intB) {
-                a = intA;
-                b = intB;
-            } else {
-                a = a.toLowerCase();
-                b = b.toLowerCase();
-            }
-            if (a &lt; b)
-                return -1;
-            if (a &gt; b)
-                return 1;
-            return 0;
-        }
-        function orderBy(column) {
-            if (!gRows)
-                gRows = Array.slice(gTBody.rows);
-            var order;
-            if (gOrderBy == column) {
-                order = gTable.getAttribute("order") == "asc" ? "desc" : "asc";
-            } else {
-                order = "asc";
-                gOrderBy = column;
-                gTable.setAttribute("order-by", column);
-                gRows.sort(compareRows);
-            }
-            gTable.removeChild(gTBody);
-            gTable.setAttribute("order", order);
-            if (order == "asc")
-                for (var i = 0; i &lt; gRows.length; i++)
-                    gTBody.appendChild(gRows[i]);
-            else
-                for (var i = gRows.length - 1; i &gt;= 0; i--)
-                    gTBody.appendChild(gRows[i]);
-            gTable.appendChild(gTBody);
-        }
-        function updateHidden() {
-            gTable.className = gUI_showHidden.getElementsByTagName("input")[0].checked ?
-                    "" :
-                    "remove-hidden";
-        }
-    </script>
-    <link href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8%2F9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAjFJREFUeNqsU8uOElEQPffR3XQ3ONASdBJCSBxHos5%2B3Bg3rvkCv8PElS78gPkO%2FATjQoUdO2ftrJiRh6aneTb9sOpC4weMN6lcuFV16pxDIfI8x12OYIDhcPiu2Wx%2B%2FHF5CW1Z6Jyegt%2FTNEWSJIjjGFEUIQxDrFYrWFSzXC4%2FdLvd95pRKpXKy%2BpRFZ7nwaWo1%2BsGnQG2260BKJfLKJVKGI1GEEJw7ateryd0v993W63WEwjgxfn5obGYzgCbzcaEbdsIggDj8Riu6z6iUk9SYZMSx8W0LMsM%2FSKK75xnJlIq80anQXdbEp0OhcPJ0eiaJnGRMEyyPDsAKKUM9clkYoDo3SZJzzSdp0VSKYmfV1co%2Bz580kw5KDIM8RbRfEnUf1HzxtQyMAGcaGruTKczMzEIaqhKifV6jd%2BzGQQB5llunF%2FM52BizC2K5sYPYvZcu653tjOM9O93wnYc08gmkgg4VAxixfqFUJT36AYBZGd6PJkFCZnnlBxMp38gqIgLpZB0y4Nph18lyWh5FFbrOSxbl3V4G%2BVB7T4ajYYxTyuLtO%2BCvWGgJE1Mc7JNsJEhvgw%2FQV4fo%2F24nbEsX2u1d5sVyn8sJO0ZAQiIYnFh%2BxrfLz%2Fj29cBS%2FO14zg3i8XigW3ZkErDtmKoeM%2BAJGRMnXeEPGKf0nCD1ydvkDzU9Jbc6OpR7WIw6L8lQ%2B4pQ1%2FlPF0RGM9Ns91Wmptk0GfB4EJkt77vXYj%2F8m%2B8y%2FkrwABHbz2H9V68DQAAAABJRU5ErkJggg%3D%3D" type="image/png" rel="icon">
-    <title>Индекс «file:///C:/Users/SNOWY/Documents/My Dropbox/Алгебра (тетрадь)/»</title>
-    <base href="file:///C:/Users/SNOWY/Documents/My%20Dropbox/%D0%90%D0%BB%D0%B3%D0%B5%D0%B1%D1%80%D0%B0%20(%D1%82%D0%B5%D1%82%D1%80%D0%B0%D0%B4%D1%8C)/">
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Index</title>
 </head>
-<body dir="ltr">
-<h1>Индекс «file:///C:/Users/SNOWY/Documents/My Dropbox/Алгебра (тетрадь)/»</h1>
-<p id="UI_goUp"><a href="file:///C:/Users/SNOWY/Documents/My%20Dropbox/" class="up">Перейти в каталог на уровень выше</a></p>
-<p style="display:none" id="UI_showHidden"><label><input type="checkbox" onchange="updateHidden()" checked="">Показывать скрытые объекты</label></p>
-<table order="">
-<thead>
-<tr>
-    <th><a href="">Имя</a></th>
-    <th><a href="">Размер</a></th>
-    <th colspan="2"><a href="">Последнее изменение</a></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-    <td sortable-data="21 нод.факторизация чисел.JPG"><a href="1%20нод.факторизация%20чисел.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">1 нод.факторизация чисел.JPG</a></td>
-    <td sortable-data="807755">789 KB</td>
-    <td sortable-data="1339646612000000">14.06.2012</td>
-    <td>10:03:32</td>
-</tr><tr>
-    <td sortable-data="210 примеры лин. сравнение с ф.Эйлера.JPG"><a href="10%20примеры%20лин.%20сравнение%20с%20ф.Эйлера.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">10 примеры лин. сравнение с ф.Эйлера.JPG</a></td>
-    <td sortable-data="904236">884 KB</td>
-    <td sortable-data="1339128298000000">08.06.2012</td>
-    <td>10:04:58</td>
-</tr><tr>
-    <td sortable-data="211 примеры.JPG"><a href="11%20примеры.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">11 примеры.JPG</a></td>
-    <td sortable-data="901781">881 KB</td>
-    <td sortable-data="1339128310000000">08.06.2012</td>
-    <td>10:05:10</td>
-</tr><tr>
-    <td sortable-data="212 цепные дроби, подходящие дроби.JPG"><a href="12%20цепные%20дроби,%20подходящие%20дроби.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">12 цепные дроби, подходящие дроби.JPG</a></td>
-    <td sortable-data="917057">896 KB</td>
-    <td sortable-data="1339128324000000">08.06.2012</td>
-    <td>10:05:24</td>
-</tr><tr>
-    <td sortable-data="213 подходящие дроби, цепные. ax = 1 mod n.JPG"><a href="13%20подходящие%20дроби,%20цепные.%20ax%20=%201%20mod%20n.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">13 подходящие дроби, цепные. ax = 1 mod n.JPG</a></td>
-    <td sortable-data="986259">964 KB</td>
-    <td sortable-data="1339128332000000">08.06.2012</td>
-    <td>10:05:32</td>
-</tr><tr>
-    <td sortable-data="214 примеры цепные. 123x=1 mod 123.JPG"><a href="14%20примеры%20цепные.%20123x=1%20mod%20123.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">14 примеры цепные. 123x=1 mod 123.JPG</a></td>
-    <td sortable-data="894317">874 KB</td>
-    <td sortable-data="1339128340000000">08.06.2012</td>
-    <td>10:05:40</td>
-</tr><tr>
-    <td sortable-data="215.JPG"><a href="15.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">15.JPG</a></td>
-    <td sortable-data="953602">932 KB</td>
-    <td sortable-data="1339128350000000">08.06.2012</td>
-    <td>10:05:50</td>
-</tr><tr>
-    <td sortable-data="216 непрерывные дроби.JPG"><a href="16%20непрерывные%20дроби.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">16 непрерывные дроби.JPG</a></td>
-    <td sortable-data="964745">943 KB</td>
-    <td sortable-data="1339128362000000">08.06.2012</td>
-    <td>10:06:02</td>
-</tr><tr>
-    <td sortable-data="217 непрерывные дроби, приближенное решение уров. разложение в ряд тейлора.JPG"><a href="17%20непрерывные%20дроби,%20приближенное%20решение%20уров.%20разложение%20в%20ряд%20тейлора.JPG" title="17 непрерывные дроби, приближенное решение уров. разложение в ряд тейлора.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">17 непрерывные дроби, приближенное решение уров. …&#8203;ложение в ряд тейлора.JPG</a></td>
-    <td sortable-data="916217">895 KB</td>
-    <td sortable-data="1339128372000000">08.06.2012</td>
-    <td>10:06:12</td>
-</tr><tr>
-    <td sortable-data="218 схема горнера.JPG"><a href="18%20схема%20горнера.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">18 схема горнера.JPG</a></td>
-    <td sortable-data="928576">907 KB</td>
-    <td sortable-data="1339128402000000">08.06.2012</td>
-    <td>10:06:42</td>
-</tr><tr>
-    <td sortable-data="219 решение уров с пом. цепных дробей.  x3+2x-4=0.JPG"><a href="19%20решение%20уров%20с%20пом.%20цепных%20дробей.%20%20x3+2x-4=0.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">19 решение уров с пом. цепных дробей.  x3+2x-4=0.JPG</a></td>
-    <td sortable-data="893096">873 KB</td>
-    <td sortable-data="1339128416000000">08.06.2012</td>
-    <td>10:06:56</td>
-</tr><tr>
-    <td sortable-data="22 нод.взаимно простые числа. сравнения.JPG"><a href="2%20нод.взаимно%20простые%20числа.%20сравнения.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">2 нод.взаимно простые числа. сравнения.JPG</a></td>
-    <td sortable-data="909088">888 KB</td>
-    <td sortable-data="1339128212000000">08.06.2012</td>
-    <td>10:03:32</td>
-</tr><tr>
-    <td sortable-data="220 сравнения по модулю p^n и p-адические числа.JPG"><a href="20%20сравнения%20по%20модулю%20p%5En%20и%20p-адические%20числа.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">20 сравнения по модулю p^n и p-адические числа.JPG</a></td>
-    <td sortable-data="927730">906 KB</td>
-    <td sortable-data="1339128424000000">08.06.2012</td>
-    <td>10:07:04</td>
-</tr><tr>
-    <td sortable-data="221 сравнения по модулю p^n и p-адические числа.JPG"><a href="21%20сравнения%20по%20модулю%20p%5En%20и%20p-адические%20числа.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">21 сравнения по модулю p^n и p-адические числа.JPG</a></td>
-    <td sortable-data="1036390">1013 KB</td>
-    <td sortable-data="1339128446000000">08.06.2012</td>
-    <td>10:07:26</td>
-</tr><tr>
-    <td sortable-data="222 примеры x2 + 2x + 4 = 0 mod 7^4.JPG"><a href="22%20примеры%20x2%20+%202x%20+%204%20=%200%20mod%207%5E4.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">22 примеры x2 + 2x + 4 = 0 mod 7^4.JPG</a></td>
-    <td sortable-data="878762">859 KB</td>
-    <td sortable-data="1339128458000000">08.06.2012</td>
-    <td>10:07:38</td>
-</tr><tr>
-    <td sortable-data="223 p-ичная запись p-адического числа. Лин. сравнение по модулю p^k.JPG"><a href="23%20p-ичная%20запись%20p-адического%20числа.%20Лин.%20сравнение%20по%20модулю%20p%5Ek.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">23 p-ичная запись p-адического числа. Лин. сравнение по модулю p^k.JPG</a></td>
-    <td sortable-data="932658">911 KB</td>
-    <td sortable-data="1339128468000000">08.06.2012</td>
-    <td>10:07:48</td>
-</tr><tr>
-    <td sortable-data="224 примеры и вспомогательная теорема f'(a) = 0 mod p.JPG"><a href="24%20примеры%20и%20вспомогательная%20теорема%20f%27(a)%20=%200%20mod%20p.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">24 примеры и вспомогательная теорема f'(a) = 0 mod p.JPG</a></td>
-    <td sortable-data="866674">847 KB</td>
-    <td sortable-data="1339128478000000">08.06.2012</td>
-    <td>10:07:58</td>
-</tr><tr>
-    <td sortable-data="225 примеры слобиком. 123x=321mod7^4.JPG"><a href="25%20примеры%20слобиком.%20123x=321mod7%5E4.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">25 примеры слобиком. 123x=321mod7^4.JPG</a></td>
-    <td sortable-data="914691">894 KB</td>
-    <td sortable-data="1339128486000000">08.06.2012</td>
-    <td>10:08:06</td>
-</tr><tr>
-    <td sortable-data="226 примеры f(x) = 0 mod 5^3.JPG"><a href="26%20примеры%20f(x)%20=%200%20mod%205%5E3.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">26 примеры f(x) = 0 mod 5^3.JPG</a></td>
-    <td sortable-data="841009">822 KB</td>
-    <td sortable-data="1339128496000000">08.06.2012</td>
-    <td>10:08:16</td>
-</tr><tr>
-    <td sortable-data="227.JPG"><a href="27.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">27.JPG</a></td>
-    <td sortable-data="912988">892 KB</td>
-    <td sortable-data="1339128506000000">08.06.2012</td>
-    <td>10:08:26</td>
-</tr><tr>
-    <td sortable-data="228 символ лежандра. лемма о порядках.JPG"><a href="28%20символ%20лежандра.%20лемма%20о%20порядках.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">28 символ лежандра. лемма о порядках.JPG</a></td>
-    <td sortable-data="938882">917 KB</td>
-    <td sortable-data="1339128514000000">08.06.2012</td>
-    <td>10:08:34</td>
-</tr><tr>
-    <td sortable-data="229 т.мультипликативная гр F звездочка конечного поля F циклична.JPG"><a href="29%20т.мультипликативная%20гр%20F%20звездочка%20конечного%20поля%20F%20циклична.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">29 т.мультипликативная гр F звездочка конечного поля F циклична.JPG</a></td>
-    <td sortable-data="1005813">983 KB</td>
-    <td sortable-data="1339128524000000">08.06.2012</td>
-    <td>10:08:44</td>
-</tr><tr>
-    <td sortable-data="23 классы вычетов. обратимые элементы.JPG"><a href="3%20классы%20вычетов.%20обратимые%20элементы.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">3 классы вычетов. обратимые элементы.JPG</a></td>
-    <td sortable-data="916146">895 KB</td>
-    <td sortable-data="1339128234000000">08.06.2012</td>
-    <td>10:03:54</td>
-</tr><tr>
-    <td sortable-data="230 Леммы Гаусса.т.Эйлера.JPG"><a href="30%20Леммы%20Гаусса.т.Эйлера.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">30 Леммы Гаусса.т.Эйлера.JPG</a></td>
-    <td sortable-data="903466">883 KB</td>
-    <td sortable-data="1339128532000000">08.06.2012</td>
-    <td>10:08:52</td>
-</tr><tr>
-    <td sortable-data="231 дополнение к закону взаимности.JPG"><a href="31%20дополнение%20к%20закону%20взаимности.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">31 дополнение к закону взаимности.JPG</a></td>
-    <td sortable-data="907109">886 KB</td>
-    <td sortable-data="1339128540000000">08.06.2012</td>
-    <td>10:09:00</td>
-</tr><tr>
-    <td sortable-data="232 тригонометрическая лемма. закон взаимности.JPG"><a href="32%20тригонометрическая%20лемма.%20закон%20взаимности.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">32 тригонометрическая лемма. закон взаимности.JPG</a></td>
-    <td sortable-data="960465">938 KB</td>
-    <td sortable-data="1339128550000000">08.06.2012</td>
-    <td>10:09:10</td>
-</tr><tr>
-    <td sortable-data="233 символ якоби. примеры на символ лежандра.JPG"><a href="33%20символ%20якоби.%20примеры%20на%20символ%20лежандра.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">33 символ якоби. примеры на символ лежандра.JPG</a></td>
-    <td sortable-data="975969">954 KB</td>
-    <td sortable-data="1339128562000000">08.06.2012</td>
-    <td>10:09:22</td>
-</tr><tr>
-    <td sortable-data="234 свойства символа якоби. закон взаимности.JPG"><a href="34%20свойства%20символа%20якоби.%20закон%20взаимности.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">34 свойства символа якоби. закон взаимности.JPG</a></td>
-    <td sortable-data="1020214">997 KB</td>
-    <td sortable-data="1339128578000000">08.06.2012</td>
-    <td>10:09:38</td>
-</tr><tr>
-    <td sortable-data="235 первообразные корни из 1. примеры на якоби.JPG"><a href="35%20первообразные%20корни%20из%201.%20примеры%20на%20якоби.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">35 первообразные корни из 1. примеры на якоби.JPG</a></td>
-    <td sortable-data="994443">972 KB</td>
-    <td sortable-data="1339128590000000">08.06.2012</td>
-    <td>10:09:50</td>
-</tr><tr>
-    <td sortable-data="236 первообразные корни по модулю p^k. [].JPG"><a href="36%20первообразные%20корни%20по%20модулю%20p%5Ek.%20%5B%5D.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">36 первообразные корни по модулю p^k. [].JPG</a></td>
-    <td sortable-data="924536">903 KB</td>
-    <td sortable-data="1339128602000000">08.06.2012</td>
-    <td>10:10:02</td>
-</tr><tr>
-    <td sortable-data="237.JPG"><a href="37.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">37.JPG</a></td>
-    <td sortable-data="907495">887 KB</td>
-    <td sortable-data="1339128612000000">08.06.2012</td>
-    <td>10:10:12</td>
-</tr><tr>
-    <td sortable-data="238.JPG"><a href="38.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">38.JPG</a></td>
-    <td sortable-data="953546">932 KB</td>
-    <td sortable-data="1339128622000000">08.06.2012</td>
-    <td>10:10:22</td>
-</tr><tr>
-    <td sortable-data="239 первообразные корни по модулю 2p^k. Теория групп.JPG"><a href="39%20первообразные%20корни%20по%20модулю%202p%5Ek.%20Теория%20групп.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">39 первообразные корни по модулю 2p^k. Теория групп.JPG</a></td>
-    <td sortable-data="961141">939 KB</td>
-    <td sortable-data="1339128630000000">08.06.2012</td>
-    <td>10:10:30</td>
-</tr><tr>
-    <td sortable-data="24 ф.Эйлера.JPG"><a href="4%20ф.Эйлера.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">4 ф.Эйлера.JPG</a></td>
-    <td sortable-data="924404">903 KB</td>
-    <td sortable-data="1339128244000000">08.06.2012</td>
-    <td>10:04:04</td>
-</tr><tr>
-    <td sortable-data="240 нормальные подгруппы. теоремки.JPG"><a href="40%20нормальные%20подгруппы.%20теоремки.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">40 нормальные подгруппы. теоремки.JPG</a></td>
-    <td sortable-data="973877">952 KB</td>
-    <td sortable-data="1339128640000000">08.06.2012</td>
-    <td>10:10:40</td>
-</tr><tr>
-    <td sortable-data="241 т. о структуре мультипликативной группы классов вычетов по любому модулю. лемма о цикл гр.JPG"><a href="41%20т.%20о%20структуре%20мультипликативной%20группы%20классов%20вычетов%20по%20любому%20модулю.%20лемма%20о%20цикл%20гр.JPG" title="41 т. о структуре мультипликативной группы классов вычетов по любому модулю. лемма о цикл гр.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">41 т. о структуре мультипликативной группы классов вычетов по любому…&#8203;дулю. лемма о цикл гр.JPG</a></td>
-    <td sortable-data="978026">956 KB</td>
-    <td sortable-data="1339128652000000">08.06.2012</td>
-    <td>10:10:52</td>
-</tr><tr>
-    <td sortable-data="242 пример символ Лежандра, найти первообразный корень по модулю 19^3.JPG"><a href="42%20пример%20символ%20Лежандра,%20найти%20первообразный%20корень%20по%20модулю%2019%5E3.JPG" title="42 пример символ Лежандра, найти первообразный корень по модулю 19^3.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">42 пример символ Лежандра, найти первообразн…&#8203;корень по модулю 19^3.JPG</a></td>
-    <td sortable-data="976641">954 KB</td>
-    <td sortable-data="1339128660000000">08.06.2012</td>
-    <td>10:11:00</td>
-</tr><tr>
-    <td sortable-data="243 многочлены над конечными полями.JPG"><a href="43%20многочлены%20над%20конечными%20полями.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">43 многочлены над конечными полями.JPG</a></td>
-    <td sortable-data="991097">968 KB</td>
-    <td sortable-data="1339128672000000">08.06.2012</td>
-    <td>10:11:12</td>
-</tr><tr>
-    <td sortable-data="244 примеры. т. о представлении НОД.JPG"><a href="44%20примеры.%20т.%20о%20представлении%20НОД.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">44 примеры. т. о представлении НОД.JPG</a></td>
-    <td sortable-data="897593">877 KB</td>
-    <td sortable-data="1339128680000000">08.06.2012</td>
-    <td>10:11:20</td>
-</tr><tr>
-    <td sortable-data="245 неприводимые многочлены, примеры.JPG"><a href="45%20неприводимые%20многочлены,%20примеры.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">45 неприводимые многочлены, примеры.JPG</a></td>
-    <td sortable-data="980134">958 KB</td>
-    <td sortable-data="1339128694000000">08.06.2012</td>
-    <td>10:11:34</td>
-</tr><tr>
-    <td sortable-data="246 построение полей порядка p^k. Сравнение в кольце многочленов.JPG"><a href="46%20построение%20полей%20порядка%20p%5Ek.%20Сравнение%20в%20кольце%20многочленов.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">46 построение полей порядка p^k. Сравнение в кольце многочленов.JPG</a></td>
-    <td sortable-data="967882">946 KB</td>
-    <td sortable-data="1339128702000000">08.06.2012</td>
-    <td>10:11:42</td>
-</tr><tr>
-    <td sortable-data="247 F[x].(f(x)) поле. Построение полей порядка 2^2,2^3,2^4,3^2.JPG"><a href="47%20F%5Bx%5D.(f(x))%20поле.%20Построение%20полей%20порядка%202%5E2,2%5E3,2%5E4,3%5E2.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">47 F[x].(f(x)) поле. Построение полей порядка 2^2,2^3,2^4,3^2.JPG</a></td>
-    <td sortable-data="970850">949 KB</td>
-    <td sortable-data="1339128714000000">08.06.2012</td>
-    <td>10:11:54</td>
-</tr><tr>
-    <td sortable-data="248 примеры построения.JPG"><a href="48%20примеры%20построения.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">48 примеры построения.JPG</a></td>
-    <td sortable-data="941665">920 KB</td>
-    <td sortable-data="1339128722000000">08.06.2012</td>
-    <td>10:12:02</td>
-</tr><tr>
-    <td sortable-data="249 характеристика поля и теоремы об этом.JPG"><a href="49%20характеристика%20поля%20и%20теоремы%20об%20этом.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">49 характеристика поля и теоремы об этом.JPG</a></td>
-    <td sortable-data="975289">953 KB</td>
-    <td sortable-data="1339128732000000">08.06.2012</td>
-    <td>10:12:12</td>
-</tr><tr>
-    <td sortable-data="25 т. о мультипликативности ф.Эйлера.JPG"><a href="5%20т.%20о%20мультипликативности%20ф.Эйлера.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">5 т. о мультипликативности ф.Эйлера.JPG</a></td>
-    <td sortable-data="947988">926 KB</td>
-    <td sortable-data="1339128252000000">08.06.2012</td>
-    <td>10:04:12</td>
-</tr><tr>
-    <td sortable-data="250 Irr(alpha,F,x), конечное расширение алгебраическо.JPG"><a href="50%20Irr(alpha,F,x),%20конечное%20расширение%20алгебраическо.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">50 Irr(alpha,F,x), конечное расширение алгебраическо.JPG</a></td>
-    <td sortable-data="1019044">996 KB</td>
-    <td sortable-data="1339128744000000">08.06.2012</td>
-    <td>10:12:24</td>
-</tr><tr>
-    <td sortable-data="251 лемма F[alpha] наименьшее подкольцо. Дальше про расширение..JPG"><a href="51%20лемма%20F%5Balpha%5D%20наименьшее%20подкольцо.%20Дальше%20про%20расширение..JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">51 лемма F[alpha] наименьшее подкольцо. Дальше про расширение..JPG</a></td>
-    <td sortable-data="1005294">982 KB</td>
-    <td sortable-data="1339128752000000">08.06.2012</td>
-    <td>10:12:32</td>
-</tr><tr>
-    <td sortable-data="252 лемма F(alpha1,...) наименьшее подполе в E, алгебраические числа.JPG"><a href="52%20лемма%20F(alpha1,...)%20наименьшее%20подполе%20в%20E,%20алгебраические%20числа.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">52 лемма F(alpha1,...) наименьшее подполе в E, алгебраические числа.JPG</a></td>
-    <td sortable-data="916591">896 KB</td>
-    <td sortable-data="1339128762000000">08.06.2012</td>
-    <td>10:12:42</td>
-</tr><tr>
-    <td sortable-data="253 ф.Мёбиуса. Закон взаимности мёбиуса.JPG"><a href="53%20ф.Мёбиуса.%20Закон%20взаимности%20мёбиуса.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">53 ф.Мёбиуса. Закон взаимности мёбиуса.JPG</a></td>
-    <td sortable-data="1013149">990 KB</td>
-    <td sortable-data="1339128770000000">08.06.2012</td>
-    <td>10:12:50</td>
-</tr><tr>
-    <td sortable-data="254 леммы, применение ф-мы обращения для круговых многочленов.JPG"><a href="54%20леммы,%20применение%20ф-мы%20обращения%20для%20круговых%20многочленов.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">54 леммы, применение ф-мы обращения для круговых многочленов.JPG</a></td>
-    <td sortable-data="1031830">1008 KB</td>
-    <td sortable-data="1339128778000000">08.06.2012</td>
-    <td>10:12:58</td>
-</tr><tr>
-    <td sortable-data="255 применение ф-мы обращения для нахождения числа неприводимых многочленов.JPG"><a href="55%20применение%20ф-мы%20обращения%20для%20нахождения%20числа%20неприводимых%20многочленов.JPG" title="55 применение ф-мы обращения для нахождения числа неприводимых многочленов.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">55 применение ф-мы обращения для нахождения числа …&#8203;риводимых многочленов.JPG</a></td>
-    <td sortable-data="1007181">984 KB</td>
-    <td sortable-data="1339128788000000">08.06.2012</td>
-    <td>10:13:08</td>
-</tr><tr>
-    <td sortable-data="256 примеры. Формула числа неприводимых мн-ов степени n над GF(p).JPG"><a href="56%20примеры.%20Формула%20числа%20неприводимых%20мн-ов%20степени%20n%20над%20GF(p).JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">56 примеры. Формула числа неприводимых мн-ов степени n над GF(p).JPG</a></td>
-    <td sortable-data="1022091">999 KB</td>
-    <td sortable-data="1339128802000000">08.06.2012</td>
-    <td>10:13:22</td>
-</tr><tr>
-    <td sortable-data="257 разложение x^n-1 на неприводимые многочлены над GF(p). круговые мн-ны характеристики p больше 0.JPG"><a href="57%20разложение%20x%5En-1%20на%20неприводимые%20многочлены%20над%20GF(p).%20круговые%20мн-ны%20характеристики%20p%20больше%200.JPG" title="57 разложение x^n-1 на неприводимые многочлены над GF(p). круговые мн-ны характеристики p больше 0.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">57 разложение x^n-1 на неприводимые многочлены над GF(p). круговые мн-н…&#8203;ктеристики p больше 0.JPG</a></td>
-    <td sortable-data="1023496">1000 KB</td>
-    <td sortable-data="1339128810000000">08.06.2012</td>
-    <td>10:13:30</td>
-</tr><tr>
-    <td sortable-data="258.JPG"><a href="58.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">58.JPG</a></td>
-    <td sortable-data="918824">898 KB</td>
-    <td sortable-data="1339646732000000">14.06.2012</td>
-    <td>10:05:32</td>
-</tr><tr>
-    <td sortable-data="26 т.Эйлера т.Ферма, решение ax=b mod n.JPG"><a href="6%20т.Эйлера%20т.Ферма,%20решение%20ax=b%20mod%20n.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">6 т.Эйлера т.Ферма, решение ax=b mod n.JPG</a></td>
-    <td sortable-data="929004">908 KB</td>
-    <td sortable-data="1339128262000000">08.06.2012</td>
-    <td>10:04:22</td>
-</tr><tr>
-    <td sortable-data="27 китайская т..JPG"><a href="7%20китайская%20т..JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">7 китайская т..JPG</a></td>
-    <td sortable-data="976077">954 KB</td>
-    <td sortable-data="1339128272000000">08.06.2012</td>
-    <td>10:04:32</td>
-</tr><tr>
-    <td sortable-data="28 обобщение китайской т..JPG"><a href="8%20обобщение%20китайской%20т..JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">8 обобщение китайской т..JPG</a></td>
-    <td sortable-data="991425">969 KB</td>
-    <td sortable-data="1339128282000000">08.06.2012</td>
-    <td>10:04:42</td>
-</tr><tr>
-    <td sortable-data="29 примеры 112^121, 11x-17y+15z = 7.JPG"><a href="9%20примеры%20112%5E121,%2011x-17y+15z%20=%207.JPG" class="file"><img alt="Файл:" src="moz-icon://.JPG?size=16">9 примеры 112^121, 11x-17y+15z = 7.JPG</a></td>
-    <td sortable-data="890329">870 KB</td>
-    <td sortable-data="1339128290000000">08.06.2012</td>
-    <td>10:04:50</td>
-</tr></tbody></table>
-</body></html>
+<body>
+<ul>
+<li><a href="14 примеры цепные. 123x=1 mod 123.JPG">14 примеры цепные. 123x=1 mod 123.JPG</a></li>
+<li><a href="15.JPG">15.JPG</a></li>
+<li><a href="16 непрерывные дроби.JPG">16 непрерывные дроби.JPG</a></li>
+<li><a href="17 непрерывные дроби, приближенное решение уров. разложение в ряд тейлора.JPG">17 непрерывные дроби, приближенное решение уров. разложение в ряд тейлора.JPG</a></li>
+<li><a href="18 схема горнера.JPG">18 схема горнера.JPG</a></li>
+<li><a href="19 решение уров с пом. цепных дробей.  x3+2x-4=0.JPG">19 решение уров с пом. цепных дробей.  x3+2x-4=0.JPG</a></li>
+<li><a href="20 сравнения по модулю p^n и p-адические числа.JPG">20 сравнения по модулю p^n и p-адические числа.JPG</a></li>
+<li><a href="21 сравнения по модулю p^n и p-адические числа.JPG">21 сравнения по модулю p^n и p-адические числа.JPG</a></li>
+<li><a href="22 примеры x2 + 2x + 4 = 0 mod 7^4.JPG">22 примеры x2 + 2x + 4 = 0 mod 7^4.JPG</a></li>
+<li><a href="23 p-ичная запись p-адического числа. Лин. сравнение по модулю p^k.JPG">23 p-ичная запись p-адического числа. Лин. сравнение по модулю p^k.JPG</a></li>
+<li><a href="24 примеры и вспомогательная теорема f'(a) = 0 mod p.JPG">24 примеры и вспомогательная теорема f'(a) = 0 mod p.JPG</a></li>
+<li><a href="25 примеры слобиком. 123x=321mod7^4.JPG">25 примеры слобиком. 123x=321mod7^4.JPG</a></li>
+<li><a href="26 примеры f(x) = 0 mod 5^3.JPG">26 примеры f(x) = 0 mod 5^3.JPG</a></li>
+<li><a href="27.JPG">27.JPG</a></li>
+<li><a href="28 символ лежандра. лемма о порядках.JPG">28 символ лежандра. лемма о порядках.JPG</a></li>
+<li><a href="29 т.мультипликативная гр F звездочка конечного поля F циклична.JPG">29 т.мультипликативная гр F звездочка конечного поля F циклична.JPG</a></li>
+<li><a href="30 Леммы Гаусса.т.Эйлера.JPG">30 Леммы Гаусса.т.Эйлера.JPG</a></li>
+<li><a href="31 дополнение к закону взаимности.JPG">31 дополнение к закону взаимности.JPG</a></li>
+<li><a href="32 тригонометрическая лемма. закон взаимности.JPG">32 тригонометрическая лемма. закон взаимности.JPG</a></li>
+<li><a href="33 символ якоби. примеры на символ лежандра.JPG">33 символ якоби. примеры на символ лежандра.JPG</a></li>
+<li><a href="34 свойства символа якоби. закон взаимности.JPG">34 свойства символа якоби. закон взаимности.JPG</a></li>
+<li><a href="35 первообразные корни из 1. примеры на якоби.JPG">35 первообразные корни из 1. примеры на якоби.JPG</a></li>
+<li><a href="36 первообразные корни по модулю p^k. [].JPG">36 первообразные корни по модулю p^k. [].JPG</a></li>
+<li><a href="37.JPG">37.JPG</a></li>
+<li><a href="38.JPG">38.JPG</a></li>
+<li><a href="39 первообразные корни по модулю 2p^k. Теория групп.JPG">39 первообразные корни по модулю 2p^k. Теория групп.JPG</a></li>
+<li><a href="40 нормальные подгруппы. теоремки.JPG">40 нормальные подгруппы. теоремки.JPG</a></li>
+<li><a href="41 т. о структуре мультипликативной группы классов вычетов по любому модулю. лемма о цикл гр.JPG">41 т. о структуре мультипликативной группы классов вычетов по любому модулю. лемма о цикл гр.JPG</a></li>
+<li><a href="42 пример символ Лежандра, найти первообразный корень по модулю 19^3.JPG">42 пример символ Лежандра, найти первообразный корень по модулю 19^3.JPG</a></li>
+<li><a href="43 многочлены над конечными полями.JPG">43 многочлены над конечными полями.JPG</a></li>
+<li><a href="44 примеры. т. о представлении НОД.JPG">44 примеры. т. о представлении НОД.JPG</a></li>
+<li><a href="45 неприводимые многочлены, примеры.JPG">45 неприводимые многочлены, примеры.JPG</a></li>
+<li><a href="46 построение полей порядка p^k. Сравнение в кольце многочленов.JPG">46 построение полей порядка p^k. Сравнение в кольце многочленов.JPG</a></li>
+<li><a href="47 F[x].(f(x)) поле. Построение полей порядка 2^2,2^3,2^4,3^2.JPG">47 F[x].(f(x)) поле. Построение полей порядка 2^2,2^3,2^4,3^2.JPG</a></li>
+<li><a href="48 примеры построения.JPG">48 примеры построения.JPG</a></li>
+<li><a href="49 характеристика поля и теоремы об этом.JPG">49 характеристика поля и теоремы об этом.JPG</a></li>
+<li><a href="50 Irr(alpha,F,x), конечное расширение алгебраическо.JPG">50 Irr(alpha,F,x), конечное расширение алгебраическо.JPG</a></li>
+<li><a href="51 лемма F[alpha] наименьшее подкольцо. Дальше про расширение..JPG">51 лемма F[alpha] наименьшее подкольцо. Дальше про расширение..JPG</a></li>
+<li><a href="52 лемма F(alpha1,...) наименьшее подполе в E, алгебраические числа.JPG">52 лемма F(alpha1,...) наименьшее подполе в E, алгебраические числа.JPG</a></li>
+<li><a href="53 ф.Мёбиуса. Закон взаимности мёбиуса.JPG">53 ф.Мёбиуса. Закон взаимности мёбиуса.JPG</a></li>
+<li><a href="54 леммы, применение ф-мы обращения для круговых многочленов.JPG">54 леммы, применение ф-мы обращения для круговых многочленов.JPG</a></li>
+<li><a href="55 применение ф-мы обращения для нахождения числа неприводимых многочленов.JPG">55 применение ф-мы обращения для нахождения числа неприводимых многочленов.JPG</a></li>
+<li><a href="56 примеры. Формула числа неприводимых мн-ов степени n над GF(p).JPG">56 примеры. Формула числа неприводимых мн-ов степени n над GF(p).JPG</a></li>
+<li><a href="57 разложение x^n-1 на неприводимые многочлены над GF(p). круговые мн-ны характеристики p больше 0.JPG">57 разложение x^n-1 на неприводимые многочлены над GF(p). круговые мн-ны характеристики p больше 0.JPG</a></li>
+<li><a href="58.JPG">58.JPG</a></li>
+<li><a href="1 нод.факторизация чисел.JPG">1 нод.факторизация чисел.JPG</a></li>
+<li><a href="2 нод.взаимно простые числа. сравнения.JPG">2 нод.взаимно простые числа. сравнения.JPG</a></li>
+<li><a href="3 классы вычетов. обратимые элементы.JPG">3 классы вычетов. обратимые элементы.JPG</a></li>
+<li><a href="4 ф.Эйлера.JPG">4 ф.Эйлера.JPG</a></li>
+<li><a href="5 т. о мультипликативности ф.Эйлера.JPG">5 т. о мультипликативности ф.Эйлера.JPG</a></li>
+<li><a href="6 т.Эйлера т.Ферма, решение ax=b mod n.JPG">6 т.Эйлера т.Ферма, решение ax=b mod n.JPG</a></li>
+<li><a href="7 китайская т..JPG">7 китайская т..JPG</a></li>
+<li><a href="8 обобщение китайской т..JPG">8 обобщение китайской т..JPG</a></li>
+<li><a href="9 примеры 112^121, 11x-17y+15z = 7.JPG">9 примеры 112^121, 11x-17y+15z = 7.JPG</a></li>
+<li><a href="10 примеры лин. сравнение с ф.Эйлера.JPG">10 примеры лин. сравнение с ф.Эйлера.JPG</a></li>
+<li><a href="11 примеры.JPG">11 примеры.JPG</a></li>
+<li><a href="12 цепные дроби, подходящие дроби.JPG">12 цепные дроби, подходящие дроби.JPG</a></li>
+<li><a href="13 подходящие дроби, цепные. ax = 1 mod n.JPG">13 подходящие дроби, цепные. ax = 1 mod n.JPG</a></li>
+</ul>
+</body>
+</html>
