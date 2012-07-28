@@ -695,6 +695,7 @@ dt {
   left: 0;
   top: 0px;
   height: 60px;
+  overflow: hidden;
   position: relative;
   background: url(../images/nav-bg.gif) #353535;
   border-bottom: 4px solid #434343;
