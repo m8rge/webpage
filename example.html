@@ -8,6 +8,17 @@
     <link rel="stylesheet" href="stylesheets/pygment_trac.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
     <script src="javascripts/respond.js"></script>
+    <script src="//vk.com/js/api/openapi.js"></script>
+    <script>
+      function authInfo(response) {
+        if(response.status=='connected') {	// если пользователь залогинен в ВК
+            console.log('user_ID: '+response.session.mid);
+        }
+        else {
+            VK.Auth.login(authInfo); // опционально можем спалиться и вызвать всплывающее окно авторизации
+        }
+      }
+    </script>
     <!--[if lt IE 9]>
       <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
