@@ -65,7 +65,7 @@ body {
   position: relative !important;
   padding: 10px;
 }
-@media (min-width: 240px) and (max-width: 719px) {
+@media (min-width: 240px) and (max-width: 767px) {
   body {
     background-image: none;
   }
