@@ -1045,3 +1045,9 @@ textarea.form-control {
     height: 82px;
   }
 }
+i.fa {
+  margin-right: 0.1em;
+}
+i.fa-paper-plane {
+  transform: rotate(7deg);
+}
