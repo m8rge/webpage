@@ -1,1 +1,1 @@
-http://10.96.200.36:8081/terminal-v2
+http://10.96.200.87:81/terminal-v2
